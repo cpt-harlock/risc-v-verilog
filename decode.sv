@@ -4,17 +4,17 @@
 module decode (
     input clk,
     input [31:0] instruction,
-    output reg [6:0] opcode,
-    output reg [4:0] rd,
-    output reg [2:0] funct3,
-    output reg [4:0] rs1,
-    output reg [4:0] rs2,
-    output reg [6:0] funct7,
-    output reg [31:0] imm_i_type,
-    output reg [31:0] imm_s_type,
-    output reg [31:0] imm_b_type,
-    output reg [31:0] imm_u_type,
-    output reg [31:0] imm_j_type
+    output [6:0] opcode,
+    output [4:0] rd,
+    output [2:0] funct3,
+    output [4:0] rs1,
+    output [4:0] rs2,
+    output [6:0] funct7,
+    output [31:0] imm_i_type,
+    output [31:0] imm_s_type,
+    output [31:0] imm_b_type,
+    output [31:0] imm_u_type,
+    output [31:0] imm_j_type
     );
     //sequential version
 //    always @(posedge(clk))

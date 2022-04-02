@@ -1,30 +1,38 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company:
+// Engineer:
+//
 // Create Date: 03/30/2022 11:47:46 PM
-// Design Name: 
+// Design Name:
 // Module Name: riscvi
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
-
-
-module riscvi(
-    input clk,
-    output [31:0] out
-    );
+`include "decode.sv"
+`include "exec.sv"
+`include "fetch.sv"
+module riscvi(output [31:0] out);
     
+    integer i;
+    reg clk;
+    initial begin
+        $display("Simulation begin");
+        for (i = 0; i < 100 ; i = i + 1) begin
+            
+            #10 clk = 0;
+            #10 clk = 1;
+        end
+    end
     wire [31:0] instruction;
     wire [6:0] opcode;
     wire [4:0] rd;
