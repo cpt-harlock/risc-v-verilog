@@ -18,9 +18,9 @@
 // Additional Comments:
 //
 //////////////////////////////////////////////////////////////////////////////////
-`include "decode.sv"
-`include "exec.sv"
-`include "fetch.sv"
+//`include "decode.sv"
+//`include "exec.sv"
+//`include "fetch.sv"
 module riscvi(output [31:0] out);
     
     integer i;
