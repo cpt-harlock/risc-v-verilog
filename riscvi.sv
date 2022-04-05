@@ -27,10 +27,12 @@ module riscvi(output [31:0] out);
     reg clk;
     initial begin
         $display("Simulation begin");
+        #10;
         for (i = 0; i < 100 ; i = i + 1) begin
             
             #10 clk = 0;
             #10 clk = 1;
+//            $stop;
         end
     end
     wire [31:0] instruction;

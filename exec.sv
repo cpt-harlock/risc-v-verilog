@@ -19,6 +19,12 @@ module exec (input clk,
     reg [31:0] address;
     
     
+    initial
+    begin
+        pc = 0;
+        $readmemh("/home/andrea/Documents/University/Code/risc-v-verilog/register_memory.txt", registers);
+    end
+    
     // a big if !
     always @*
     begin

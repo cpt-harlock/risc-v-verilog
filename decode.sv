@@ -19,17 +19,7 @@ module decode (
     //sequential version
 //    always @(posedge(clk))
 //    begin
-//        opcode <= instruction[6:0];
-//        rd <= instruction[11:7];
-//        funct3 <= instruction[14:12];
-//        rs1 <= instruction[19:15];
-//        rs2 <= instruction[24:20];
-//        funct7 <= instruction[31:25];
-//        imm_i_type <= instruction[31:20];
-//        imm_s_type <= {instruction[31:25], instruction[11:7]};
-//        imm_b_type <= {{19 {instruction[31]}},instruction[31],instruction[7],instruction[30:25],instruction[11:8], 1'b0};
-//        imm_u_type <= {instruction[31:12], 12'b0};
-//        imm_j_type <= {{11{instruction[31]}},instruction[31], instruction[19:12],instruction[20],instruction[30:21], 1'b0};
+//        copy combinatorial
 //    end
 // combinatorial
 assign opcode = instruction[6:0];
