@@ -1,3 +1,3 @@
-add x3, x2, x1
-add x4, x3, x2
+add x3, x2, x2
 sub x5, x1, x2
+lb x3, 0(x2)

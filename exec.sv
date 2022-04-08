@@ -13,7 +13,7 @@ module exec (input clk,
              input [31:0] imm_u_type,
              input [31:0] imm_j_type,
              output reg [31:0] pc);
-    (* ram_style = "block" *) reg [7:0] data_memory[0:2**3-1];
+    (* ram_style = "block" *) reg [7:0] data_memory[0:2**10 - 1];
     reg [31:0] registers[0:2**5 - 1];
     reg [31:0] rs1Data, rs2Data;
     reg [31:0] address;
@@ -23,6 +23,7 @@ module exec (input clk,
     begin
         pc = 0;
         $readmemh("/home/andrea/Documents/University/Code/risc-v-verilog/register_memory.txt", registers);
+        $readmemh("/home/andrea/Documents/University/Code/risc-v-verilog/data_memory.txt", data_memory);
     end
     
     // a big if !
@@ -31,7 +32,7 @@ module exec (input clk,
     rs1Data = registers[rs1];
     rs2Data = registers[rs2];
     //TODO: put wen = 0?
-    case ({opcode, funct3, funct7[5]})
+    casez ({opcode, funct3, funct7[5]})
         `LB : begin
             registers[rd] = {{24{data_memory[imm_i_type+rs1Data][7]}},data_memory[imm_i_type+rs1Data]};
             pc            = pc + 4;
