@@ -28,7 +28,7 @@ module riscvi(output [31:0] out);
     initial begin
         $display("Simulation begin");
         #10;
-        for (i = 0; i < 100 ; i = i + 1) begin
+        for (i = 0; i < 1000 ; i = i + 1) begin
             
             #10 clk = 0;
 //            $stop;

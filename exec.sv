@@ -78,7 +78,7 @@ module exec (input clk,
             pc            = pc + 4;
         end
         `SRAI: begin
-            registers[rd] = registers[rs1] >>> imm_i_type[4:0];
+            registers[rd] = $signed(registers[rs1]) >>> imm_i_type[4:0];
             pc            = pc + 4;
         end
         `ORI: begin
@@ -141,7 +141,7 @@ module exec (input clk,
             pc            = pc + 4;
         end
         `SRA: begin
-            registers[rd] = rs1Data >>> rs2Data[4:0];
+            registers[rd] = $signed(rs1Data) >>> rs2Data[4:0];
             pc            = pc + 4;
         end
         `OR: begin
@@ -200,7 +200,7 @@ module exec (input clk,
         end
         `JALR: begin
             registers[rd] = pc + 4;
-            pc            = rs1Data + imm_j_type;
+            pc            = rs1Data + imm_i_type;
         end
         `JAL: begin
             registers[rd] = pc + 4;
