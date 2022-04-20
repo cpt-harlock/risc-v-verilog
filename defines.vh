@@ -4,6 +4,7 @@
 `define FETCH_SEL_NOP 2'b10
 `define NOP_INSTRUCTION 32'b0000000_00000_00000_000_00000_0110011
 `define NOP_OPCODE 32'b0000000_00000_00000_000_00000_0110011
+`define DATA_MEMSIZE 2**16
 
 typedef enum bit[2:0] { R, I, S, B, U, J } instruction_type;
 

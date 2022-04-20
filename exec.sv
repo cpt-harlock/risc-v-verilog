@@ -10,13 +10,16 @@ module exec (input clk,
              input [31:0] pc,
              output reg [31:0] result,
              output reg branch_taken,
-             output reg [31:0] address 
+             output reg [31:0] address,
+             output reg [31:0] data
              );
     
     
     // a big if !
     always @(posedge clk)
+    // possible data to store in memory
     begin
+        data = rs2Data;
         casez ({opcode, funct3, funct7[5]})
             `LB,
             `LH,
