@@ -12,6 +12,10 @@ module mem (
 
 reg [7:0] memory [0:`DATA_MEMSIZE-1];
 
+initial begin
+    $readmemh("./data_memory.txt", memory);
+end
+
 always @(posedge clk ) begin
     if (store_mem == 1) begin
         case (size)
