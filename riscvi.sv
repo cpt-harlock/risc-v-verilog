@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
-`include "modules_include.vh"
+//`include "modules_include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company:
 // Engineer:
@@ -32,12 +32,13 @@ module riscvi(output [31:0] out);
         $monitor("At time %t, value = %h (%0d)",
               $time, clk, clk);
         #10;
-        for (i = 0; i < 10 ; i = i + 1) begin
+        for (i = 0; i < 400 ; i = i + 1) begin
             
             #10 clk = 0;
 //            $stop;
             #10 clk = 1;
         end
+        $finish;
     end
     wire [31:0] instruction;
     wire [6:0] opcode;
@@ -61,14 +62,16 @@ module riscvi(output [31:0] out);
     assign out = instruction;
    
     /* CONTROL UNIT */
-   wire [1:0] size_load_store;
+   wire [2:0] size_load_store;
    cu control_unit (
     .opcode_fetch(fetch_pipeline_output_instruction[6:0]),
-    .opcode_dec(opcode_dec),
+    .opcode_dec(opcode_ex_in),
     .opcode_ex(opcode_ex),
+    .funct_3_ex(funct_3_ex),
+    .funct_7_bit_ex(funct_7_ex[5]),
     .opcode_mem(opcode_mem),
     .branch_taken(branch_taken), //branch taken signal logic implemented in EX unit ...
-    .nop_output_fetch(nop_output_cu),
+    .nop_output_fetch(nop_output_fetch),
     .nop_output_dec(nop_output_dec),
     .nop_output_ex(nop_output_ex),
     .nop_output_mem(nop_output_mem),
@@ -77,7 +80,8 @@ module riscvi(output [31:0] out);
     .store_mem(store_mem_cu),
     .load_mem(load_mem_cu),
     .store_reg(store_reg_cu),
-    .size(size_load_store)
+    .size(size_load_store),
+    .sign(sign_load_store)
    );  
     
     /* FETCH UNIT */
@@ -102,7 +106,7 @@ module riscvi(output [31:0] out);
     pipeline_fetch pipe_fetch (
     .clk(clk),
     .input_instruction(instruction),
-    .nop_output(fetch_nop_output),
+    .nop_output(nop_output_fetch),
     .output_instruction(fetch_pipeline_output_instruction),
     //VIP: saved pc is instruction one + 4
     .pc_in(pc_out),
@@ -120,7 +124,6 @@ module riscvi(output [31:0] out);
 
     /* DECODE UNIT */
     decode dec (
-    .clk(clk),
     .instruction(fetch_pipeline_output_instruction),
     .opcode(opcode_dec),
     .rd(rd_dec),
@@ -132,10 +135,11 @@ module riscvi(output [31:0] out);
     );
 
     regfile rf (
+     .clk(clk),
      .rs1(rs1_dec),
      .rs2(rs2_dec),
      .rd(regfile_rd),
-     .wen(regfile_wen),
+     .wen(store_reg_cu),
      .rdData(regfile_rd_data),
      .rs1Data(rs1Data),
      .rs2Data(rs2Data)
@@ -200,6 +204,9 @@ module riscvi(output [31:0] out);
     wire mem_store_reg;
 
     wire [6:0] opcode_ex;
+    
+    wire [2:0] funct_3_ex;
+    wire [6:0] funct_7_ex;
 
     pipeline_ex pipe_ex (
     .clk(clk),
@@ -207,10 +214,14 @@ module riscvi(output [31:0] out);
     .data_in(rs2_data_ex_in),
     .rd_in(rd_ex_in),
     .opcode_in(opcode_ex_in),
+    .funct_3_in(funct3_ex_in),
+    .funct_7_in(funct7_ex_in),
     .result_out(mem_result),
     .data_out(mem_data),
     .rd_out(mem_rd_in),
-    .opcode_out(opcode_ex)
+    .opcode_out(opcode_ex),
+    .funct_3_out(funct_3_ex),
+    .funct_7_out(funct_7_ex)
     );
     /* END EX MODULE */
 
@@ -221,10 +232,11 @@ module riscvi(output [31:0] out);
     .clk(clk),
     .result(mem_result),
     .data(mem_data),
-    .store_mem(mem_store_mem),
-    .load_mem(mem_load_mem),
+    .store_mem(store_mem_cu),
+    .load_mem(load_mem_cu),
     .size(size_load_store),
-    .out_data(mem_out_data)
+    .out_data(mem_out_data),
+    .sign(sign_load_store)
     ); 
 
 
@@ -232,15 +244,14 @@ module riscvi(output [31:0] out);
     wire regfile_wen;
     wire [4:0] regfile_rd;
     wire [6:0] opcode_mem;
-
+    wire store_reg_cu;
+    
     pipeline_mem pipe_mem (
     .clk(clk),
     .data_in(mem_out_data),
-    .store_reg_in(store_reg_cu),
     .rd_in(mem_rd_in),
     .opcode_in(opcode_ex),
     .data_out(regfile_rd_data),
-    .store_reg_out(regfile_wen),
     .rd_out(regfile_rd),
     .opcode_out(opcode_mem)
     );

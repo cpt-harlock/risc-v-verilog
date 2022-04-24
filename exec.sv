@@ -15,6 +15,9 @@ module exec (input clk,
              );
     
     
+    initial begin
+    branch_taken = 0;
+    end
     // a big if !
     always @(posedge clk)
     // possible data to store in memory

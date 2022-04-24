@@ -31,12 +31,22 @@ module regfile(
     );
     
     reg [31:0] registers[0:2**5 - 1];
+    integer i;
+    initial begin
+        for (i = 0;i < 32; i=i+1) begin
+            registers[i] = i;
+        end
+    end
     
     always @(posedge(clk)) begin
         rs1Data <= registers[rs1];
         rs2Data <= registers[rs2];
-        if (wen == 1)
-            registers[rd] <= rdData;
+        if (wen == 1) begin
+            if (rd == 0)
+                registers[rd] = 32'b0;
+            else
+                registers[rd] <= rdData;
+        end
     end
      
 endmodule

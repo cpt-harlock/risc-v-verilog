@@ -18,16 +18,16 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
+`include "defines.vh"
 
 module fetch(
     input clk,
     input [31:0] pc,
     output reg [31:0] instruction
     );
-    (* ram_style = "block" *) reg [7:0] instruction_memory[0:2**10 - 1];
+    (* ram_style = "block" *) reg [7:0] instruction_memory[0:`INSTRUCTIONS_MEM_SIZE - 1];
     initial begin
-        $readmemh("/home/andrea/Documents/University/Code/risc-v-verilog/instruction_memory.txt", instruction_memory);
+        $readmemh("/home/harlock/instruction_memory.txt", instruction_memory);
     end
     always @(posedge clk)
     begin
