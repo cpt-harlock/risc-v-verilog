@@ -1,6 +1,7 @@
 begin:
 add x3, x2, x2
-add x3, x2, x3
+add x4, x2, x3
+add x6, x1, x3
 nop
 nop
 nop
