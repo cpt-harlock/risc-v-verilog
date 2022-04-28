@@ -74,19 +74,19 @@ module riscvi(output [31:0] out);
     cu control_unit (
     .clk(clk),
     .reset(reset),
-    .opcode_fetch(opcode_fetch_cu),
-    .opcode_dec(opcode_dec),
-    .opcode_ex(opcode_ex_in),
-    .funct_3_ex(funct3_ex_in),
-    .funct_7_bit_ex(funct7_ex_in[5]),
-    .opcode_mem(opcode_ex),
-    .opcode_wb(opcode_mem),
+    .opcode_fetch(fetch_pipeline_output_instruction[6:0]),
+    .opcode_dec(opcode_ex_in_temp),
+    .opcode_ex(opcode_ex),
+    .funct_3_ex(funct_3_ex),
+    .funct_7_bit_ex(funct_7_ex[5]),
+    .opcode_mem(opcode_mem),
+    .opcode_wb(opcode_wb),
     .branch_taken(branch_taken), //branch taken signal logic implemented in EX unit ...
-    .rd_ex(rd_ex_in),
-    .rs1_dec(rs1_dec),
-    .rs2_dec(rs2_dec),
-    .rd_mem(mem_rd_in),
-    .rd_wb(regfile_rd),
+    .rd_ex(mem_rd_in),
+    .rs1_dec(rs1_ex_in_temp),
+    .rs2_dec(rs2_ex_in_temp),
+    .rd_mem(regfile_rd),
+    .rd_wb(wb_rd),
     .nop_output_fetch(nop_output_fetch),
     .nop_output_dec(nop_output_dec),
     .nop_output_ex(nop_output_ex),
@@ -124,8 +124,7 @@ module riscvi(output [31:0] out);
     );
     
     wire [31:0] fetch_pipe_pc_out;
-    wire [6:0] opcode_fetch_cu;
-    assign opcode_fetch_cu = nop_output_fetch == 0 ? instruction[6:0] : `NOP_INSTRUCTION_OPCODE;
+
     pipeline_fetch pipe_fetch (
     .clk(clk),
     .input_instruction(instruction),
@@ -177,6 +176,15 @@ module riscvi(output [31:0] out);
     wire [31:0] imm_ex_in;
     wire [31:0] rs1_data_ex_in, rs2_data_ex_in;
     
+    wire [6:0] opcode_ex_in_temp;
+    wire [4:0] rd_ex_in_temp;
+    wire [2:0] funct3_ex_in_temp;
+    wire [4:0] rs1_ex_in_temp, rs2_ex_in_temp;
+    wire [6:0] funct7_ex_in_temp;
+    wire [31:0] imm_ex_in_temp;
+    wire [31:0] rs1_data_ex_in_temp, rs2_data_ex_in_temp;
+    wire [31:0] dec_pipe_pc_out_temp;
+    
     pipeline_dec pipe_dec (
     .clk(clk),
     .stall(stall_dec),
@@ -190,20 +198,35 @@ module riscvi(output [31:0] out);
     .imm_in(imm_dec),
     .rs1_data_in(rs1Data),
     .rs2_data_in(rs2Data),
-    .opcode_out(opcode_ex_in),
-    .rd_out(rd_ex_in),
-    .funct3_out(funct3_ex_in),
-    .rs1_out(rs1_ex_in),
-    .rs2_out(rs2_ex_in),
-    .funct7_out(funct7_ex_in),
-    .imm_out(imm_ex_in),
-    .rs1_data_out(rs1_data_ex_in),
-    .rs2_data_out(rs2_data_ex_in),
+    .opcode_out(opcode_ex_in_temp),
+    .rd_out(rd_ex_in_temp),
+    .funct3_out(funct3_ex_in_temp),
+    .rs1_out(rs1_ex_in_temp),
+    .rs2_out(rs2_ex_in_temp),
+    .funct7_out(funct7_ex_in_temp),
+    .imm_out(imm_ex_in_temp),
+    .rs1_data_out(rs1_data_ex_in_temp),
+    .rs2_data_out(rs2_data_ex_in_temp),
     .pc_in(fetch_pipe_pc_out),
-    .pc_out(dec_pipe_pc_out)
+    .pc_out(dec_pipe_pc_out_temp)
     );
     
     /* END DEC UNIT */
+    
+    //NOP instruction for RAW stall    
+    
+
+    
+    assign opcode_ex_in = !stall_dec ? opcode_ex_in_temp : `NOP_INSTRUCTION_OPCODE;
+    assign funct3_ex_in = !stall_dec ? funct3_ex_in_temp : `NOP_INSTRUCTION_FUNCT3;
+    assign rs1_data_ex_in = !stall_dec ? rs1_data_ex_in_temp : `NOP_INSTRUCTION_RS1_DATA;
+    assign rs2_data_ex_in = !stall_dec ? rs2_data_ex_in_temp : `NOP_INSTRUCTION_RS2_DATA;
+    assign funct7_ex_in = !stall_dec ? funct7_ex_in_temp : `NOP_INSTRUCTION_FUNCT7;
+    assign imm_ex_in = !stall_dec ? imm_ex_in_temp : `NOP_INSTRUCTION_IMM;
+    assign dec_pipe_pc_out = !stall_dec ? dec_pipe_pc_out_temp : `NOP_INSTRUCTION_PC;
+    assign rd_ex_in = !stall_dec ? rd_ex_in_temp  : `NOP_INSTRUCTION_RD;
+    assign rs1_ex_in = !stall_dec ? rs1_ex_in_temp  : `NOP_INSTRUCTION_RS1;
+    assign rs2_ex_in = !stall_dec ? rs2_ex_in_temp  : `NOP_INSTRUCTION_RS2;
     
     /* EX UNIT */
     wire [31:0] ex_result;

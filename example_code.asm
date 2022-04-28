@@ -1,16 +1,17 @@
 begin:
 add x3, x2, x2
+add x3, x2, x3
 nop
 nop
 nop
 nop
 nop
-sub x5, x1, x2
-nop
-nop
-nop
-nop
-nop
+#sub x5, x1, x2
+#nop
+#nop
+#nop
+#nop
+#nop
 sll x3, x5, x1 
 nop
 nop

@@ -16,21 +16,21 @@ module cu (input clk,
            input [4:0] rs2_dec,
            input [4:0] rd_mem,
            input [4:0] rd_wb,
-           output reg nop_output_fetch,
-           output reg nop_output_dec,
-           output reg nop_output_ex,
-           output reg nop_output_mem,
-           output reg [1:0] fetch_sel,
-           output reg store_mem,
-           output reg load_mem,
-           output reg store_reg,
-           output reg [2:0] size,
-           output reg sign,
-           output reg stall_dec,
-           output reg forward_mem_ex_rs1,
-           output reg forward_mem_ex_rs2,
-           output reg forward_wb_ex_rs1,
-           output reg forward_wb_ex_rs2);
+           output nop_output_fetch,
+           output nop_output_dec,
+           output nop_output_ex,
+           output nop_output_mem,
+           output [1:0] fetch_sel,
+           output store_mem,
+           output load_mem,
+           output store_reg,
+           output [2:0] size,
+           output sign,
+           output stall_dec,
+           output forward_mem_ex_rs1,
+           output forward_mem_ex_rs2,
+           output forward_wb_ex_rs1,
+           output forward_wb_ex_rs2);
 
 function [2:0] get_instruction_type;
     input [6:0] opcode;
@@ -91,94 +91,55 @@ function read_from_register_instruction;
 endfunction
 
 
-reg stall = 0;
-initial
-begin
-stall_dec = 0;
-fetch_sel = `FETCH_SEL_PC;
-end
+
+wire branch_stall, jump_stall, raw_stall;
+wire store_reg_wb;
 
 
-
-reg branch_stall, jump_stall, raw_stall;
-reg store_reg_wb;
-
-always @(negedge clk, negedge reset)
-begin
-if (reset == 0) begin
-
-branch_stall = 0;
-jump_stall = 0;
-raw_stall = 0;
-stall = 0;
-stall_dec = 0;
-nop_output_fetch = 0;
-nop_output_dec = 0;
-nop_output_ex = 0;
-nop_output_mem  = 0;
-fetch_sel = `FETCH_SEL_PC;
-store_mem = 0;
-load_mem = 0;
-store_reg = 0;
-forward_mem_ex_rs1 = 0;
-forward_mem_ex_rs2 = 0;
-forward_wb_ex_rs1 = 0;
-forward_wb_ex_rs2 = 0;
-end
-else
-begin
-branch_stall = get_instruction_type(opcode_fetch) == `B || get_instruction_type(opcode_dec) == `B;
-jump_stall   = is_jump_instruction(opcode_fetch) || is_jump_instruction(opcode_dec) ;
-raw_stall = write_to_register_instruction(opcode_ex) && read_from_register_instruction(opcode_dec) && (rd_ex == rs1_dec || rd_ex == rs2_dec) && rd_ex != 0;
-stall = branch_stall || jump_stall || raw_stall;
-nop_output_fetch = branch_stall || jump_stall;
+assign branch_stall = get_instruction_type(opcode_fetch) == `B || get_instruction_type(opcode_dec) == `B;
+assign jump_stall   = is_jump_instruction(opcode_fetch) || is_jump_instruction(opcode_dec) ;
+assign raw_stall = write_to_register_instruction(opcode_ex) && read_from_register_instruction(opcode_dec) && (rd_ex == rs1_dec || rd_ex == rs2_dec) && rd_ex != 0;
+assign stall = branch_stall || jump_stall || raw_stall;
+assign nop_output_fetch = branch_stall || jump_stall;
 // fetch selector is old pc while branch doesn't reach EX unit
 // NOTE: we can avoid stopping the PC for jump instruction since we're going to load it with new value in any case
-fetch_sel = branch_taken == 1 ? `FETCH_SEL_BRANCH : stall == 1 ? `FETCH_SEL_NOP :
+assign fetch_sel = branch_taken == 1 ? `FETCH_SEL_BRANCH : stall == 1 ? `FETCH_SEL_NOP :
 `FETCH_SEL_PC;
-stall_dec = raw_stall;
-store_mem = get_instruction_type(opcode_ex) == `S ? 1 : 0;
-load_mem = {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LB ? 1 :
+assign stall_dec = raw_stall;
+//assign stall_dec = 0;
+
+assign store_mem = get_instruction_type(opcode_ex) == `S ? 1 : 0;
+assign load_mem = {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LB ? 1 :
 {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LH ? 1 :
 {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LW ? 1 :
 {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LBU ? 1 :
 {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LHU ? 1 :
 0;
 
-store_reg = get_instruction_type(opcode_mem) == `R ? 1 :
+assign store_reg = get_instruction_type(opcode_mem) == `R ? 1 :
 get_instruction_type(opcode_mem) == `I ? 1 :
 get_instruction_type(opcode_mem) == `J ? 1 :
 get_instruction_type(opcode_mem) == `U ? 1 : 0;
 
-size = {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LB || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `SB || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LBU ? 1 :
+assign size = {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LB || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `SB || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LBU ? 1 :
 {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LH || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `SH || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LHU ? 2 :
 {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LW || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `SW ? 4 : 0;
 
-sign = {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LB || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LH ? 1 : 0;
+assign sign = {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LB || {opcode_ex, funct_3_ex, funct_7_bit_ex} ==? `LH ? 1 : 0;
 
 
-store_reg_wb = get_instruction_type(opcode_wb) == `R ? 1 :
+assign store_reg_wb = get_instruction_type(opcode_wb) == `R ? 1 :
 get_instruction_type(opcode_wb) == `I ? 1 :
 get_instruction_type(opcode_wb) == `J ? 1 :
 get_instruction_type(opcode_wb) == `U ? 1 : 0;
 
 
 //forwarding signals
-forward_mem_ex_rs1 = (rd_mem == rs1_dec) && (rs1_dec != 0) && (store_reg);
-forward_mem_ex_rs2 = (rd_mem == rs2_dec) && (rs2_dec != 0) && (store_reg);
+assign forward_mem_ex_rs1 = (rd_mem == rs1_dec) && (rs1_dec != 0) && (store_reg);
+assign forward_mem_ex_rs2 = (rd_mem == rs2_dec) && (rs2_dec != 0) && (store_reg);
 
-forward_wb_ex_rs1 = (rd_wb == rs1_dec) && (rs1_dec != 0) && (store_reg_wb);
-forward_wb_ex_rs2 = (rd_wb == rs2_dec) && (rs2_dec != 0) && (store_reg_wb);
-
-end
-end
-
-
-
-
-
-
-
+assign forward_wb_ex_rs1 = (rd_wb == rs1_dec) && (rs1_dec != 0) && (store_reg_wb);
+assign forward_wb_ex_rs2 = (rd_wb == rs2_dec) && (rs2_dec != 0) && (store_reg_wb);
 
 
 endmodule
