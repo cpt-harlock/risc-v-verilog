@@ -14,7 +14,7 @@ module mem (
 reg [7:0] memory [0:`DATA_MEM_SIZE-1];
 
 initial begin
-    $readmemh("/home/harlock/data_memory.txt", memory);
+    $readmemh("/home/andrea/data_memory.txt", memory);
 end
 
 always @(posedge clk ) begin

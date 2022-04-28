@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
-`include "modules_include.vh"
+//`include "modules_include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company:
 // Engineer:
@@ -26,6 +26,12 @@ module riscvi(output [31:0] out);
     integer i;
     reg clk;
     initial begin
+    clk = 0;
+    reset = 1;
+    #5;
+    reset = 0;
+    #5;
+    reset = 1; 
         $display("Simulation begin");
         $dumpfile("test.vcd");
         $dumpvars;
@@ -61,22 +67,26 @@ module riscvi(output [31:0] out);
     
     assign out = instruction;
     
+    reg reset;
+    
     /* CONTROL UNIT */
     wire [2:0] size_load_store;
     cu control_unit (
-    .opcode_fetch(fetch_pipeline_output_instruction[6:0]),
-    .opcode_dec(opcode_ex_in),
-    .opcode_ex(opcode_ex),
-    .funct_3_ex(funct_3_ex),
-    .funct_7_bit_ex(funct_7_ex[5]),
-    .opcode_mem(opcode_mem),
-    .opcode_wb(opcode_wb),
+    .clk(clk),
+    .reset(reset),
+    .opcode_fetch(opcode_fetch_cu),
+    .opcode_dec(opcode_dec),
+    .opcode_ex(opcode_ex_in),
+    .funct_3_ex(funct3_ex_in),
+    .funct_7_bit_ex(funct7_ex_in[5]),
+    .opcode_mem(opcode_ex),
+    .opcode_wb(opcode_mem),
     .branch_taken(branch_taken), //branch taken signal logic implemented in EX unit ...
-    .rd_ex(mem_rd_in),
-    .rs1_dec(rs1_ex_in),
-    .rs2_dec(rs2_ex_in),
-    .rd_mem(regfile_rd),
-    .rd_wb(wb_rd),
+    .rd_ex(rd_ex_in),
+    .rs1_dec(rs1_dec),
+    .rs2_dec(rs2_dec),
+    .rd_mem(mem_rd_in),
+    .rd_wb(regfile_rd),
     .nop_output_fetch(nop_output_fetch),
     .nop_output_dec(nop_output_dec),
     .nop_output_ex(nop_output_ex),
@@ -88,6 +98,7 @@ module riscvi(output [31:0] out);
     .store_reg(store_reg_cu),
     .size(size_load_store),
     .sign(sign_load_store),
+    .stall_dec(stall_dec),
     .forward_mem_ex_rs1(forward_mem_ex_rs1),
     .forward_mem_ex_rs2(forward_mem_ex_rs2),
     .forward_wb_ex_rs1(forward_wb_ex_rs1),
@@ -113,6 +124,8 @@ module riscvi(output [31:0] out);
     );
     
     wire [31:0] fetch_pipe_pc_out;
+    wire [6:0] opcode_fetch_cu;
+    assign opcode_fetch_cu = nop_output_fetch == 0 ? instruction[6:0] : `NOP_INSTRUCTION_OPCODE;
     pipeline_fetch pipe_fetch (
     .clk(clk),
     .input_instruction(instruction),
@@ -134,6 +147,7 @@ module riscvi(output [31:0] out);
     
     /* DECODE UNIT */
     decode dec (
+    .clk(clk),
     .instruction(fetch_pipeline_output_instruction),
     .opcode(opcode_dec),
     .rd(rd_dec),
@@ -165,6 +179,7 @@ module riscvi(output [31:0] out);
     
     pipeline_dec pipe_dec (
     .clk(clk),
+    .stall(stall_dec),
     .nop_output(dec_nop_output),
     .opcode_in(opcode_dec),
     .rd_in(rd_dec),

@@ -27,7 +27,7 @@ module fetch(
     );
     (* ram_style = "block" *) reg [7:0] instruction_memory[0:`INSTRUCTIONS_MEM_SIZE - 1];
     initial begin
-        $readmemh("/home/harlock/instruction_memory.txt", instruction_memory);
+        $readmemh("/home/andrea/instruction_memory.txt", instruction_memory);
     end
     always @(posedge clk)
     begin
