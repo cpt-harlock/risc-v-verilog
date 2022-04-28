@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 `include "defines.vh"
-//`include "modules_include.vh"
+`include "modules_include.vh"
 //////////////////////////////////////////////////////////////////////////////////
 // Company:
 // Engineer:
@@ -30,12 +30,12 @@ module riscvi(output [31:0] out);
         $dumpfile("test.vcd");
         $dumpvars;
         $monitor("At time %t, value = %h (%0d)",
-              $time, clk, clk);
+        $time, clk, clk);
         #10;
         for (i = 0; i < 400 ; i = i + 1) begin
             
             #10 clk = 0;
-//            $stop;
+            //            $stop;
             #10 clk = 1;
         end
         $finish;
@@ -60,17 +60,23 @@ module riscvi(output [31:0] out);
     wire [31:0] fetch_pipeline_output_instruction;
     
     assign out = instruction;
-   
+    
     /* CONTROL UNIT */
-   wire [2:0] size_load_store;
-   cu control_unit (
+    wire [2:0] size_load_store;
+    cu control_unit (
     .opcode_fetch(fetch_pipeline_output_instruction[6:0]),
     .opcode_dec(opcode_ex_in),
     .opcode_ex(opcode_ex),
     .funct_3_ex(funct_3_ex),
     .funct_7_bit_ex(funct_7_ex[5]),
     .opcode_mem(opcode_mem),
+    .opcode_wb(opcode_wb),
     .branch_taken(branch_taken), //branch taken signal logic implemented in EX unit ...
+    .rd_ex(mem_rd_in),
+    .rs1_dec(rs1_ex_in),
+    .rs2_dec(rs2_ex_in),
+    .rd_mem(regfile_rd),
+    .rd_wb(wb_rd),
     .nop_output_fetch(nop_output_fetch),
     .nop_output_dec(nop_output_dec),
     .nop_output_ex(nop_output_ex),
@@ -81,15 +87,19 @@ module riscvi(output [31:0] out);
     .load_mem(load_mem_cu),
     .store_reg(store_reg_cu),
     .size(size_load_store),
-    .sign(sign_load_store)
-   );  
+    .sign(sign_load_store),
+    .forward_mem_ex_rs1(forward_mem_ex_rs1),
+    .forward_mem_ex_rs2(forward_mem_ex_rs2),
+    .forward_wb_ex_rs1(forward_wb_ex_rs1),
+    .forward_wb_ex_rs2(forward_wb_ex_rs2)
+    );
     
     /* FETCH UNIT */
     assign fetch_input = fetch_sel == `FETCH_SEL_PC ? pc_out :
-                         fetch_sel == `FETCH_SEL_BRANCH ?  branch_target :
-                         pc_out - 4;
+    fetch_sel == `FETCH_SEL_BRANCH ?  branch_target :
+    pc_out - 4;
     assign pc_input = fetch_input + 4;
-
+    
     fetch fet (
     .clk(clk),
     .instruction(instruction),
@@ -101,7 +111,7 @@ module riscvi(output [31:0] out);
     .new_pc(pc_input),
     .pc(pc_out)
     );
-
+    
     wire [31:0] fetch_pipe_pc_out;
     pipeline_fetch pipe_fetch (
     .clk(clk),
@@ -112,7 +122,7 @@ module riscvi(output [31:0] out);
     .pc_in(pc_out),
     .pc_out(fetch_pipe_pc_out)
     );
-
+    
     /* END FETCH UNIT */
     
     wire [6:0] opcode_dec;
@@ -121,7 +131,7 @@ module riscvi(output [31:0] out);
     wire [2:0] funct3_dec;
     wire [6:0] funct7_dec;
     wire [31:0] dec_pipe_pc_out;
-
+    
     /* DECODE UNIT */
     decode dec (
     .instruction(fetch_pipeline_output_instruction),
@@ -133,16 +143,16 @@ module riscvi(output [31:0] out);
     .funct7(funct7_dec),
     .imm(imm_dec)
     );
-
+    
     regfile rf (
-     .clk(clk),
-     .rs1(rs1_dec),
-     .rs2(rs2_dec),
-     .rd(regfile_rd),
-     .wen(store_reg_cu),
-     .rdData(regfile_rd_data),
-     .rs1Data(rs1Data),
-     .rs2Data(rs2Data)
+    .clk(clk),
+    .rs1(rs1_dec),
+    .rs2(rs2_dec),
+    .rd(regfile_rd),
+    .wen(store_reg_cu),
+    .rdData(regfile_rd_data),
+    .rs1Data(rs1Data),
+    .rs2Data(rs2Data)
     );
     
     wire [6:0] opcode_ex_in;
@@ -152,7 +162,7 @@ module riscvi(output [31:0] out);
     wire [6:0] funct7_ex_in;
     wire [31:0] imm_ex_in;
     wire [31:0] rs1_data_ex_in, rs2_data_ex_in;
-
+    
     pipeline_dec pipe_dec (
     .clk(clk),
     .nop_output(dec_nop_output),
@@ -177,17 +187,23 @@ module riscvi(output [31:0] out);
     .pc_in(fetch_pipe_pc_out),
     .pc_out(dec_pipe_pc_out)
     );
-
+    
     /* END DEC UNIT */
-
+    
     /* EX UNIT */
     wire [31:0] ex_result;
     exec ex (
     .clk(clk),
     .opcode(opcode_ex_in),
     .funct3(funct3_ex_in),
-    .rs1Data(rs1_data_ex_in),
-    .rs2Data(rs2_data_ex_in),
+    .rs1Data_dec(rs1_data_ex_in),
+    .rs2Data_dec(rs2_data_ex_in),
+    .rdMem(regfile_rd_data),
+    .rdWb(wb_rd_data),
+    .forward_mem_ex_rs1(forward_mem_ex_rs1),
+    .forward_mem_ex_rs2(forward_mem_ex_rs2),
+    .forward_wb_ex_rs1(forward_wb_ex_rs1),
+    .forward_wb_ex_rs2(forward_wb_ex_rs2),
     .funct7(funct7_ex_in),
     .imm(imm_ex_in),
     .pc(dec_pipe_pc_out),
@@ -195,19 +211,19 @@ module riscvi(output [31:0] out);
     .address(branch_target),
     .branch_taken(branch_taken)
     );
-
+    
     wire [31:0] mem_result;
     wire [31:0] mem_data;
     wire [4:0] mem_rd_in;
     wire mem_store_mem;
     wire mem_load_mem;
     wire mem_store_reg;
-
+    
     wire [6:0] opcode_ex;
     
     wire [2:0] funct_3_ex;
     wire [6:0] funct_7_ex;
-
+    
     pipeline_ex pipe_ex (
     .clk(clk),
     .result_in(ex_result),
@@ -224,8 +240,8 @@ module riscvi(output [31:0] out);
     .funct_7_out(funct_7_ex)
     );
     /* END EX MODULE */
-
-
+    
+    
     /* BEGIN MEM MODULE */
     wire [31:0] mem_out_data;
     mem memory (
@@ -237,9 +253,9 @@ module riscvi(output [31:0] out);
     .size(size_load_store),
     .out_data(mem_out_data),
     .sign(sign_load_store)
-    ); 
-
-
+    );
+    
+    
     wire [31:0] regfile_rd_data;
     wire regfile_wen;
     wire [4:0] regfile_rd;
@@ -256,6 +272,19 @@ module riscvi(output [31:0] out);
     .opcode_out(opcode_mem)
     );
     /* END MEM */
-
-
+    
+    wire [31:0] wb_rd_data;
+    wire [6:0] opcode_wb;
+    wire [4:0] wb_rd;
+    pipeline_mem pipe_wb (
+    .clk(clk),
+    .data_in(regfile_rd_data),
+    .rd_in(regfile_rd),
+    .opcode_in(opcode_mem),
+    .data_out(wb_rd_data),
+    .rd_out(wb_rd),
+    .opcode_out(opcode_wb)
+    );
+    
+    
 endmodule
